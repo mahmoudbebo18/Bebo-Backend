@@ -104,4 +104,4 @@ app.post("/paymob/payment-key", async (req, res) => {
 });
 
 
-module.exports = app;
+module.exports.handler = serverless(app);
