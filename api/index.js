@@ -11,8 +11,6 @@ app.use(cors({
 }));
 app.use(express.json());
 
-
-
 let paymobToken = "";
 
 // Endpoint to get the Paymob token
@@ -24,6 +22,7 @@ app.post("/paymob/auth", async (req, res) => {
         paymobToken = response.data.token;
         res.json({ token: paymobToken });
     } catch (err) {
+        console.error("Auth error:", err.message);
         res.status(500).json({ error: "Auth failed", details: err.message });
     }
 });
@@ -31,7 +30,7 @@ app.post("/paymob/auth", async (req, res) => {
 // Endpoint to create an order
 app.post("/paymob/order", async (req, res) => {
     const { items, userId } = req.body;
-    console.log(req.body);
+    console.log("Order request body:", req.body);
     const orderItems = items.map(item => ({
         name: item.title,
         amount_cents: item.price * 100,
@@ -39,6 +38,14 @@ app.post("/paymob/order", async (req, res) => {
     }));
 
     try {
+        // Refresh token if empty
+        if (!paymobToken) {
+            const authResponse = await axios.post("https://accept.paymob.com/api/auth/tokens", {
+                api_key: process.env.PAYMOB_API_KEY,
+            });
+            paymobToken = authResponse.data.token;
+        }
+
         const response = await axios.post("https://accept.paymob.com/api/ecommerce/orders", {
             auth_token: paymobToken,
             delivery_needed: "false",
@@ -48,12 +55,11 @@ app.post("/paymob/order", async (req, res) => {
         });
 
         res.json({ order_id: response.data.id });
-
     } catch (err) {
+        console.error("Order error:", err.message);
         res.status(500).json({ error: "Order creation failed", details: err.message });
     }
 });
-
 
 // Endpoint to get the payment key
 app.post("/paymob/payment-key", async (req, res) => {
@@ -86,7 +92,7 @@ app.post("/paymob/payment-key", async (req, res) => {
                 country: "EG",
                 state: "NA",
                 phone_number: "NA",
-                last_name: lastName // Make sure to include last_name
+                last_name: lastName
             },
             currency: "EGP",
             integration_id: process.env.PAYMOB_INTEGRATION_ID,
@@ -94,7 +100,7 @@ app.post("/paymob/payment-key", async (req, res) => {
 
         res.json({ token: response.data.token });
     } catch (err) {
-        console.error("Full error:", err.response?.data); // Log full error details
+        console.error("Payment key error:", err.response?.data || err.message);
         res.status(500).json({
             error: "Payment key failed",
             details: err.message,
@@ -103,5 +109,10 @@ app.post("/paymob/payment-key", async (req, res) => {
     }
 });
 
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error("Global error:", err.message);
+    res.status(500).json({ error: "Internal server error", details: err.message });
+});
 
-module.exports.handler = serverless(app);
+module.exports = serverless(app);
