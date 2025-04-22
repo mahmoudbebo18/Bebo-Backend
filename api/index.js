@@ -1,21 +1,17 @@
 const express = require("express");
-const serverless = require("serverless-http");
 const axios = require("axios");
 const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
-app.use(cors({
-    origin: 'https://bebo-zeta.vercel.app' 
-}));
+
+app.use(cors({ origin: 'https://bebo-zeta.vercel.app' }));
 app.use(express.json());
-
-
 
 let paymobToken = "";
 
-// Endpoint to get the Paymob token
-app.post("/api/paymob/auth", async (req, res) => {
+// POST /api/paymob/auth
+app.post("/paymob/auth", async (req, res) => {
     try {
         const response = await axios.post("https://accept.paymob.com/api/auth/tokens", {
             api_key: process.env.PAYMOB_API_KEY,
@@ -27,10 +23,10 @@ app.post("/api/paymob/auth", async (req, res) => {
     }
 });
 
-// Endpoint to create an order
-app.post("/api/paymob/order", async (req, res) => {
-    const { items, userId } = req.body;
-    console.log(req.body);
+// POST /api/paymob/order
+app.post("/paymob/order", async (req, res) => {
+    const { items } = req.body;
+
     const orderItems = items.map(item => ({
         name: item.title,
         amount_cents: item.price * 100,
@@ -53,13 +49,11 @@ app.post("/api/paymob/order", async (req, res) => {
     }
 });
 
-
-// Endpoint to get the payment key
-app.post("/api/paymob/payment-key", async (req, res) => {
+// POST /api/paymob/payment-key
+app.post("/paymob/payment-key", async (req, res) => {
     const { amountCents, orderId, email, firstName, lastName } = req.body;
 
     try {
-        // Refresh token if empty
         if (!paymobToken) {
             const authResponse = await axios.post("https://accept.paymob.com/api/auth/tokens", {
                 api_key: process.env.PAYMOB_API_KEY,
@@ -85,7 +79,7 @@ app.post("/api/paymob/payment-key", async (req, res) => {
                 country: "EG",
                 state: "NA",
                 phone_number: "NA",
-                last_name: lastName // Make sure to include last_name
+                last_name: lastName
             },
             currency: "EGP",
             integration_id: process.env.PAYMOB_INTEGRATION_ID,
@@ -93,7 +87,6 @@ app.post("/api/paymob/payment-key", async (req, res) => {
 
         res.json({ token: response.data.token });
     } catch (err) {
-        console.error("Full error:", err.response?.data); // Log full error details
         res.status(500).json({
             error: "Payment key failed",
             details: err.message,
@@ -102,5 +95,4 @@ app.post("/api/paymob/payment-key", async (req, res) => {
     }
 });
 
-
-module.exports.handler = serverless(app);
+module.exports = app; // ✅ This is what Vercel expects
