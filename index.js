@@ -1,5 +1,4 @@
 const express = require("express");
-const serverless = require("serverless-http");
 const axios = require("axios");
 const cors = require("cors");
 require("dotenv").config();
@@ -103,5 +102,6 @@ app.post("/paymob/payment-key", async (req, res) => {
     }
 });
 
-
-module.exports = serverless(app);
+app.listen(5000 || process.env.PORT, () => {
+    console.log("Server is running on port 5000");
+});
