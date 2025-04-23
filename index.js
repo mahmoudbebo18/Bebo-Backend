@@ -56,7 +56,7 @@ app.post("/paymob/order", async (req, res) => {
 
 // Endpoint to get the payment key
 app.post("/paymob/payment-key", async (req, res) => {
-    const { amountCents, orderId, email, firstName, lastName } = req.body;
+    const { amountCents, orderId, email, firstName, notes, city, street, buildingNumber, district, phone_number } = req.body;
 
     try {
         // Refresh token if empty
@@ -77,15 +77,17 @@ app.post("/paymob/payment-key", async (req, res) => {
                 email,
                 floor: "NA",
                 first_name: firstName,
-                street: "NA",
-                building: "NA",
+                street: street,
+                building: buildingNumber,
                 shipping_method: "NA",
                 postal_code: "NA",
-                city: "NA",
+                city: city,
                 country: "EG",
-                state: "NA",
+                state: district,
                 phone_number: "NA",
-                last_name: lastName // Make sure to include last_name
+                last_name: ".",
+                phone_number: phone_number,
+                extra_description: notes
             },
             currency: "EGP",
             integration_id: process.env.PAYMOB_INTEGRATION_ID,
